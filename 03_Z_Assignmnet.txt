@@ -1,0 +1,101 @@
+Learning Objectives:-
+Create a yaml file containing the pod spec for the nginx pod.
+Create the pod.
+
+
+Your company is getting ready to launch a new website, and they need you to set up an nginx web server in their Kubernetes cluster. The nginx server will need to be accessible via network in the future, so you will need to expose port 80 as a containerPort for the nginx container. Your team has also asked you to ensure that nginx runs in quiet mode for the time being to cut down on unnecessary log output. You can do this by setting the command to nginx and passing the following arg to the container: -g daemon off; -q. As this nginx server belongs to the Web team, you will need to create it in the team's web namespace.
+
+To summarize:
+
+Use the nginx container image.
+The container needs a containerPort of 80.
+Set the command to nginx
+Pass in the -g daemon off; -q args to run nginx in quiet mode.
+Create the pod in the web namespace.
+Once the pod is created, you should be able to find it with kubectl get pods -n web. Once the pod is created, you can get more information about its current status with kubectl describe pod nginx -n web.
+
+============================================================================================================================================================== Solution 
+
+# Create a pod with nginx as base image,exposing port 80
+$ vi nginxpod.yml
+
+apiVersion : v1
+kind: Pod
+metadata: 
+   name: nginxpod
+   namespace: web-ns
+   labels:
+    app: nginx-app
+spec:
+  containers:
+   - name: nginx-contr
+     image: nginx:latest
+     command: ['nginx','-g','daemon off;','-q'] 
+     ports:
+       - containerPort: 80 
+
+#create namespace called web-ns for nginxpod
+$ kubectl create ns web-ns
+namespace/web-ns created
+
+#create pod in the namespace called web-ns
+$ kubectl create -f nginxpod.yml -n web-ns
+pod/nginxpod created
+# Kubectl apply -f nginxpod.yml -n web-ns --- will update file if not will create one
+
+#describe details of nginx[od taht is created
+$ kubectl describe pod nginxpod -n web-ns
+Name:               nginxpod
+Namespace:          web-ns
+Priority:           0
+PriorityClassName:  <none>
+Node:               node01/172.17.0.25
+Start Time:         Wed, 13 Nov 2019 06:46:46 +0000
+Labels:             app=nginx-app
+Annotations:        <none>
+Status:             Running
+IP:                 10.40.0.1
+Containers:
+  nginx-contr:
+    Container ID:  docker://94acf6584d44e1ab44fa20399a7eb253687e1abfac902b53b276eed3ff2d534b
+
+===============================================================================================================================================================
+ADDITIONAL INFO for self
+$ kubectl get ns
+NAME              STATUS   AGE
+default           Active   100m
+kube-node-lease   Active   100m
+kube-public       Active   100m
+kube-system       Active   100m
+web-ns            Active   23m
+
+$ kubectl get pods -n web-ns
+NAME       READY   STATUS    RESTARTS   AGE
+nginxpod   1/1     Running   0          14m
+
+$ kubectl cluster-info
+Kubernetes master is running at https://172.17.0.22:6443
+KubeDNS is running at https://172.17.0.22:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+
+$ kubectl describe pods  etcd-master -n kube-system
+Name:               etcd-master
+Namespace:          kube-system
+Priority:           2000000000
+PriorityClassName:  system-cluster-critical
+Node:               master/172.17.0.22
+Start Time:         Wed, 13 Nov 2019 05:11:52 +0000
+Labels:             component=etcd
+                    tier=control-plane
+Annotations:        kubernetes.io/config.hash: 070684efbc6e7fb9366ac6e2876b6668
+                    kubernetes.io/config.mirror: 070684efbc6e7fb9366ac6e2876b6668
+                    kubernetes.io/config.seen: 2019-11-13T05:11:52.10562206Z
+                    kubernetes.io/config.source: file
+
+$ kubectl describe node node01
+Name:               node01
+Roles:              <none>
+Labels:             beta.kubernetes.io/arch=amd64
+                    beta.kubernetes.io/os=linux
+                    kubernetes.io/arch=amd64
+                    kubernetes.io/hostname=node01
+                    kubernetes.io/os=linux
