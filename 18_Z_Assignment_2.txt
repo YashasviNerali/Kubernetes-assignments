@@ -1,0 +1,86 @@
+Learning Objectives:-
+Create the cron job in the cluster
+Allow the cron job to run successfully
+
+Problem Statement:-
+Your company has a simple data cleanup process that is run periodically for maintenance purposes. They would like to stop doing this manually in order to save time, so you have been asked to implement a cron job in the Kubernetes cluster to run this process. Create a cron job called cleanup-cronjob using the linuxacademycontent/data-cleanup:1 image. Have the job run every minute with the following cron expression: */1 * * * *.
+
+
+=============================================================================================================================================================
+$ vi cleanup-cronjob.yml
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: cleanup-cronjob
+spec:
+  schedule: "*/1 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: cleanup-ctr
+            image: linuxacademycontent/data-cleanup:1
+          restartPolicy: OnFailure
+    
+
+$ kubectl create -f cleanup-cronjob.yml
+$ kubectl get cronjobs
+$ kubectl get pods
+
+$ kubectl get jobs --watch
+NAME                         COMPLETIONS   DURATION   AGE
+cleanup-cronjob-1574421060   1/1           4s         61s
+cleanup-cronjob-1574421120   0/1                      1s
+cleanup-cronjob-1574421120   0/1           1s         1s
+cleanup-cronjob-1574421120   0/1           0s         1s
+cleanup-cronjob-1574421120   1/1           3s         4s
+cleanup-cronjob-1574421060   1/1           4s         71s
+
+
+$ kubectl describe cronjob cleanup-cronjob
+Name:                          cleanup-cronjob
+Namespace:                     default
+Labels:                        <none>
+Annotations:                   <none>
+Schedule:                      */1 * * * *
+Concurrency Policy:            Forbid
+Suspend:                       False
+Successful Job History Limit:  824638190696
+Failed Job History Limit:      1
+Starting Deadline Seconds:     <unset>
+Selector:                      <unset>
+Parallelism:                   <unset>
+Completions:                   <unset>
+Pod Template:
+  Labels:  <none>
+  Containers:
+   cleanup-ctr:
+    Image:           linuxacademycontent/data-cleanup:1
+    Port:            <none>
+    Host Port:       <none>
+    Environment:     <none>
+    Mounts:          <none>
+  Volumes:           <none>
+Last Schedule Time:  Fri, 22 Nov 2019 11:11:00 +0000
+Active Jobs:         cleanup-cronjob-1574421060
+Events:
+  Type    Reason            Age    From                Message
+  ----    ------            ----   ----                -------
+  Normal  SuccessfulCreate  3m7s   cronjob-controller  Created job cleanup-cronjob-1574420880
+  Normal  SawCompletedJob   2m56s  cronjob-controller  Saw completed job: cleanup-cronjob-1574420880
+  Normal  SuccessfulCreate  2m6s   cronjob-controller  Created job cleanup-cronjob-1574420940
+  Normal  SawCompletedJob   116s   cronjob-controller  Saw completed job: cleanup-cronjob-1574420940
+  Normal  SuccessfulDelete  116s   cronjob-controller  Deleted job cleanup-cronjob-1574420880
+  Normal  SuccessfulCreate  66s    cronjob-controller  Created job cleanup-cronjob-1574421000
+  Normal  SawCompletedJob   56s    cronjob-controller  Saw completed job: cleanup-cronjob-1574421000
+  Normal  SuccessfulDelete  56s    cronjob-controller  Deleted job cleanup-cronjob-1574420940
+  Normal  SuccessfulCreate  6s     cronjob-controller  Created job cleanup-cronjob-1574421060
+
+===========================================================
+For ref
+https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/
+$ docker exec inspect linuxacademycontent/data-cleanup:1
